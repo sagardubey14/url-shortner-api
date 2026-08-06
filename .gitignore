@@ -1,0 +1,109 @@
+# =========================
+# Node Modules
+# =========================
+node_modules/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Build Output
+# =========================
+dist/
+build/
+out/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Coverage / Testing
+# =========================
+coverage/
+.nyc_output/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Cache
+# =========================
+.cache/
+.eslintcache
+.prettiercache
+
+# =========================
+# Database Files
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# Redis Dumps
+# =========================
+dump.rdb
+appendonly.aof
+
+# =========================
+# Uploads / Generated Files
+# =========================
+uploads/
+public/uploads/
+tmp/
+temp/
+
+# =========================
+# IDE Files
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS Generated Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Docker
+# =========================
+.docker/
+
+# =========================
+# Testing Artifacts
+# =========================
+test-results/
+playwright-report/
+
+# =========================
+# Swagger Generated Files
+# =========================
+swagger.json
+
+# =========================
+# Security / Secrets
+# =========================
+*.pem
+*.key
+*.crt
+
+# =========================
+# Local Config
+# =========================
+config/local.*

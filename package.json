@@ -1,0 +1,56 @@
+{
+  "name": "url-shortner-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github-sagar-2:sagardubey14/url-shortner-api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "bullmq": "^6.0.8",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "helmet": "^8.3.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.1",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "nanoid": "^6.0.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.1",
+    "validator": "^13.15.35",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "jest": "^30.4.2",
+    "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
+    "supertest": "^7.2.2"
+  }
+}
