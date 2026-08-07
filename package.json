@@ -20,6 +20,14 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "jest": {
+    "setupFiles": [
+      "<rootDir>/tests/setup-env.js"
+    ]
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bullmq": "^6.0.8",
@@ -45,6 +53,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
