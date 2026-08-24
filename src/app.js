@@ -8,6 +8,7 @@ const pinoHttp = require("pino-http");
 
 const logger = require("./utils/logger");
 const healthRouter = require("./routes/health.routes");
+const shortenRouter = require("./routes/shorten.routes");
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.use("/health", healthRouter);
+app.use("/api/shorten", shortenRouter);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Not found" });
