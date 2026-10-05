@@ -20,7 +20,13 @@ async function createShortUrl(req, res) {
   }
 
   const shortCode = await getNextShortCode();
-  const url = await Url.create({ shortCode, longUrl, customAlias, tags });
+  const url = await Url.create({
+    shortCode,
+    longUrl,
+    customAlias,
+    tags,
+    userId: req.userId,
+  });
 
   res.status(201).json({
     shortCode: url.shortCode,

@@ -5,10 +5,34 @@ const request = require("supertest");
 const Url = require("../src/models/url.model");
 const shortenService = require("../src/services/shorten.service");
 const app = require("../src/app");
+const { authHeader } = require("./helpers");
 
 describe("POST /api/shorten", () => {
   beforeEach(() => {
     jest.resetAllMocks();
+  });
+
+  it("returns 401 without a token", async () => {
+    const res = await request(app)
+      .post("/api/shorten")
+      .send({ longUrl: "https://example.com" });
+
+    expect(res.status).toBe(401);
+    expect(Url.create).not.toHaveBeenCalled();
+  });
+
+  it("stores the authenticated user as owner", async () => {
+    shortenService.getNextShortCode.mockResolvedValue("aB3xY9");
+    Url.create.mockResolvedValue({ shortCode: "aB3xY9" });
+
+    await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader("507f1f77bcf86cd799439011"))
+      .send({ longUrl: "https://example.com" });
+
+    expect(Url.create).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "507f1f77bcf86cd799439011" }),
+    );
   });
 
   it("creates a short URL for a valid longUrl and returns 201", async () => {
@@ -21,6 +45,7 @@ describe("POST /api/shorten", () => {
 
     const res = await request(app)
       .post("/api/shorten")
+      .set("Authorization", authHeader())
       .send({ longUrl: "https://example.com/some/long/path" });
 
     expect(res.status).toBe(201);
@@ -40,6 +65,7 @@ describe("POST /api/shorten", () => {
   it("returns 400 and does not call the service when longUrl is not a valid URL", async () => {
     const res = await request(app)
       .post("/api/shorten")
+      .set("Authorization", authHeader())
       .send({ longUrl: "not-a-url" });
 
     expect(res.status).toBe(400);
@@ -52,6 +78,7 @@ describe("POST /api/shorten", () => {
 
     const res = await request(app)
       .post("/api/shorten")
+      .set("Authorization", authHeader())
       .send({ longUrl: "https://example.com", customAlias: "my-link" });
 
     expect(res.status).toBe(409);
@@ -72,6 +99,7 @@ describe("POST /api/shorten", () => {
 
     const res = await request(app)
       .post("/api/shorten")
+      .set("Authorization", authHeader())
       .send({ longUrl: "https://example.com", customAlias: "my-link" });
 
     expect(res.status).toBe(201);

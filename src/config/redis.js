@@ -21,4 +21,8 @@ async function setCache(key, value, ttlSeconds) {
   await redis.set(key, value, "EX", ttlSeconds);
 }
 
-module.exports = { redis, ping, getCache, setCache };
+async function delCache(key) {
+  await redis.del(key);
+}
+
+module.exports = { redis, ping, getCache, setCache, delCache };

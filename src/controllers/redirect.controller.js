@@ -1,8 +1,9 @@
 const Url = require("../models/url.model");
 const redisClient = require("../config/redis");
 
+const { cacheKey } = require("../utils/cache-key");
+
 const CACHE_TTL_SECONDS = 24 * 60 * 60;
-const cacheKey = (code) => `shortcode:${code}`;
 
 async function redirectShortUrl(req, res) {
   const { code } = req.params;
