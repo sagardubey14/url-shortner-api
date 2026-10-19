@@ -8,6 +8,7 @@ const pinoHttp = require("pino-http");
 
 const logger = require("./utils/logger");
 const healthRouter = require("./routes/health.routes");
+const { apiLimiter } = require("./middlewares/rate-limit.middleware");
 const authRouter = require("./routes/auth.routes");
 const linksRouter = require("./routes/links.routes");
 const shortenRouter = require("./routes/shorten.routes");
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.use("/health", healthRouter);
+app.use("/api", apiLimiter);
 app.use("/api/auth", authRouter);
 app.use("/api/links", linksRouter);
 app.use("/api/shorten", shortenRouter);
@@ -36,10 +38,11 @@ app.use((req, res) => {
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "Invalid JSON body" });
+  }
   req.log?.error({ err }, "Unhandled error");
-  res
-    .status(err.status || 500)
-    .json({ error: err.message || "Internal server error" });
+  res.status(500).json({ error: "Internal server error" });
 });
 
 module.exports = app;

@@ -14,6 +14,9 @@ module.exports = [
         module: "readonly",
         require: "readonly",
         __dirname: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setImmediate: "readonly",
       },
     },
     plugins: {

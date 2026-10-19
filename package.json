@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "worker": "node src/workers/analytics.worker.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "lint": "eslint .",
@@ -46,6 +47,7 @@
     "nanoid": "^6.0.1",
     "pino": "^10.3.1",
     "pino-http": "^11.0.0",
+    "rate-limit-redis": "^6.0.1",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "uuid": "^14.0.1",
