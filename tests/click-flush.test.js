@@ -1,8 +1,10 @@
 jest.mock("../src/models/analytics.model");
 jest.mock("../src/models/url.model");
+jest.mock("../src/utils/geoip");
 
 const Analytics = require("../src/models/analytics.model");
 const Url = require("../src/models/url.model");
+const { countryForIp } = require("../src/utils/geoip");
 const { flushClicks } = require("../src/services/click-flush.service");
 
 const click = (shortCode, extra = {}) => ({
@@ -33,6 +35,16 @@ describe("flushClicks", () => {
       expect.objectContaining({ shortCode: "bbb" }),
     ]);
     expect(options).toEqual({ ordered: false });
+  });
+
+  it("stores the country resolved from each click's IP", async () => {
+    countryForIp.mockImplementation((ip) => (ip === "1.1.1.1" ? "AU" : "US"));
+
+    await flushClicks([click("aaa"), click("bbb", { ipAddress: "1.1.1.1" })]);
+
+    const docs = Analytics.insertMany.mock.calls[0][0];
+    expect(docs.map((d) => d.country)).toEqual(["US", "AU"]);
+    expect(countryForIp).toHaveBeenCalledWith("1.1.1.1");
   });
 
   it("increments clickCount once per short code with the summed count", async () => {

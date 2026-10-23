@@ -1,5 +1,6 @@
 const Analytics = require("../models/analytics.model");
 const Url = require("../models/url.model");
+const { countryForIp } = require("../utils/geoip");
 
 async function flushClicks(clicks) {
   const docs = clicks.map((c) => ({
@@ -7,6 +8,7 @@ async function flushClicks(clicks) {
     ipAddress: c.ipAddress,
     referrer: c.referrer,
     userAgent: c.userAgent,
+    country: countryForIp(c.ipAddress),
     timestamp: new Date(c.timestamp),
   }));
   await Analytics.insertMany(docs, { ordered: false });

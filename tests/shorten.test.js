@@ -1,15 +1,45 @@
 jest.mock("../src/models/url.model");
 jest.mock("../src/services/shorten.service");
+jest.mock("../src/services/metadata.service");
 
 const request = require("supertest");
 const Url = require("../src/models/url.model");
 const shortenService = require("../src/services/shorten.service");
+const metadataService = require("../src/services/metadata.service");
 const app = require("../src/app");
 const { authHeader } = require("./helpers");
 
 describe("POST /api/shorten", () => {
   beforeEach(() => {
     jest.resetAllMocks();
+  });
+
+  it("schedules a metadata fetch for the new link without blocking the response", async () => {
+    shortenService.getNextShortCode.mockResolvedValue("aB3xY9");
+    Url.create.mockResolvedValue({
+      shortCode: "aB3xY9",
+      longUrl: "https://example.com/page",
+    });
+
+    const res = await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader())
+      .send({ longUrl: "https://example.com/page" });
+
+    expect(res.status).toBe(201);
+    expect(metadataService.scheduleMetadataFetch).toHaveBeenCalledWith(
+      expect.anything(),
+      { shortCode: "aB3xY9", longUrl: "https://example.com/page" },
+    );
+  });
+
+  it("does not schedule a metadata fetch when validation fails", async () => {
+    await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader())
+      .send({ longUrl: "nope" });
+
+    expect(metadataService.scheduleMetadataFetch).not.toHaveBeenCalled();
   });
 
   it("returns 401 without a token", async () => {

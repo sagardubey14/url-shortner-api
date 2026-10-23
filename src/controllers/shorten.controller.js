@@ -1,4 +1,5 @@
 const Url = require("../models/url.model");
+const { scheduleMetadataFetch } = require("../services/metadata.service");
 const { getNextShortCode } = require("../services/shorten.service");
 const { shortenSchema } = require("../validators/shorten.validator");
 
@@ -26,6 +27,11 @@ async function createShortUrl(req, res) {
     customAlias,
     tags,
     userId: req.userId,
+  });
+
+  scheduleMetadataFetch(req, {
+    shortCode: url.shortCode,
+    longUrl: url.longUrl,
   });
 
   res.status(201).json({

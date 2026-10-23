@@ -17,6 +17,9 @@ module.exports = [
         setTimeout: "readonly",
         clearTimeout: "readonly",
         setImmediate: "readonly",
+        URL: "readonly",
+        Buffer: "readonly",
+        AbortSignal: "readonly",
       },
     },
     plugins: {

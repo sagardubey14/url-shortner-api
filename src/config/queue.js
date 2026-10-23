@@ -3,38 +3,55 @@ const { Queue } = require("bullmq");
 const env = require("./env");
 
 const CLICK_QUEUE = "click-analytics";
+const METADATA_QUEUE = "link-metadata";
 // BullMQ: a higher number means lower priority. Clicks must never starve
-// more important jobs (e.g. metadata fetches) added later.
+// more important jobs (e.g. metadata fetches).
 const CLICK_JOB_PRIORITY = 10;
 
-let clickQueue;
+const queues = new Map();
 
 // BullMQ workers require maxRetriesPerRequest: null on their connection.
 function createWorkerConnection() {
   return new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 }
 
-function getClickQueue() {
-  if (!clickQueue) {
-    clickQueue = new Queue(CLICK_QUEUE, {
+function getQueue(name, defaultJobOptions) {
+  if (!queues.has(name)) {
+    const queue = new Queue(name, {
       // Fail fast when Redis is unreachable instead of buffering adds forever.
       connection: new IORedis(env.redisUrl, { enableOfflineQueue: false }),
       defaultJobOptions: {
-        priority: CLICK_JOB_PRIORITY,
         attempts: 3,
         backoff: { type: "exponential", delay: 1000 },
         removeOnComplete: true,
         removeOnFail: 1000,
+        ...defaultJobOptions,
       },
     });
-    // Queue errors must not crash the API; redirects don't depend on them.
-    clickQueue.on("error", () => {});
+    // Queue errors must not crash the API; requests don't depend on them.
+    queue.on("error", () => {});
+    queues.set(name, queue);
   }
-  return clickQueue;
+  return queues.get(name);
 }
 
 function enqueueClick(click) {
-  return getClickQueue().add("click", click);
+  return getQueue(CLICK_QUEUE, { priority: CLICK_JOB_PRIORITY }).add(
+    "click",
+    click,
+  );
 }
 
-module.exports = { CLICK_QUEUE, createWorkerConnection, enqueueClick };
+function enqueueMetadata(link) {
+  return getQueue(METADATA_QUEUE, {
+    backoff: { type: "exponential", delay: 5000 },
+  }).add("fetch-metadata", link);
+}
+
+module.exports = {
+  CLICK_QUEUE,
+  METADATA_QUEUE,
+  createWorkerConnection,
+  enqueueClick,
+  enqueueMetadata,
+};
