@@ -6,6 +6,8 @@ const compression = require("compression");
 const cookieParser = require("cookie-parser");
 const pinoHttp = require("pino-http");
 
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./docs/swagger");
 const logger = require("./utils/logger");
 const healthRouter = require("./routes/health.routes");
 const { apiLimiter } = require("./middlewares/rate-limit.middleware");
@@ -25,6 +27,10 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, "..", "public")));
+
+// Mounted before the "/:code" redirect route, which would otherwise shadow it.
+app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/health", healthRouter);
 app.use("/api", apiLimiter);
