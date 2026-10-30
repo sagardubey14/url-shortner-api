@@ -24,7 +24,7 @@ const router = express.Router();
  *             required: [longUrl]
  *             properties:
  *               longUrl: { type: string, format: uri, maxLength: 2048, description: http or https only }
- *               customAlias: { type: string, minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9-]+$' }
+ *               customAlias: { type: string, minLength: 3, maxLength: 30, pattern: '^[a-zA-Z0-9-]+$', description: 'Also resolves at /{alias}. Must not collide with another link or be reserved (health, api, api-docs).' }
  *               tags:
  *                 type: array
  *                 maxItems: 5

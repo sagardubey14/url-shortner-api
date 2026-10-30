@@ -1,4 +1,5 @@
 jest.mock("../src/models/url.model");
+jest.mock("../src/models/user.model");
 jest.mock("../src/services/shorten.service");
 
 const request = require("supertest");

@@ -6,7 +6,7 @@ const { redirectShortUrl } = require("../controllers/redirect.controller");
  * /{code}:
  *   get:
  *     tags: [Redirect]
- *     summary: Redirect to the original URL
+ *     summary: Redirect to the original URL (short code or custom alias)
  *     description: Served from Redis when cached (24h TTL). Records a click asynchronously; the redirect never waits on analytics.
  *     parameters:
  *       - in: path
@@ -24,7 +24,7 @@ const { redirectShortUrl } = require("../controllers/redirect.controller");
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }
  *       410:
- *         description: The link was deleted
+ *         description: The link was deleted or has expired
  *         content:
  *           application/json:
  *             schema: { $ref: '#/components/schemas/Error' }

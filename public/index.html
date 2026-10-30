@@ -26,10 +26,16 @@
   <body>
     <h1>URL Shortener API</h1>
     <p>
-      A backend API for creating and managing shortened URLs, built with Node.js,
-      Express, and a MongoDB replica set. It generates collision-free short codes
-      with an atomic Base62 counter, caches redirects in Redis, and processes click
-      analytics asynchronously through BullMQ.
+      A backend API for creating and managing short links, built with Node.js,
+      Express, and a MongoDB replica set. Short codes come from an atomic Base62
+      counter, so they never collide. Redirects are cached in Redis and never
+      wait on analytics, which are collected in batches by BullMQ workers and
+      broken down by country, referrer, and date.
+    </p>
+    <p>
+      Sign up and get a token with <code>POST /api/auth/register</code> and
+      <code>POST /api/auth/login</code>, then create links with
+      <code>POST /api/shorten</code>.
     </p>
     <p>Full interactive API documentation: <a href="/api-docs">/api-docs</a></p>
     <p>Service status: <a href="/health">/health</a></p>

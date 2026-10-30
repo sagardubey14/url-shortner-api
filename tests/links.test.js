@@ -1,8 +1,10 @@
 jest.mock("../src/models/url.model");
+jest.mock("../src/models/user.model");
 jest.mock("../src/config/redis");
 
 const request = require("supertest");
 const Url = require("../src/models/url.model");
+const User = require("../src/models/user.model");
 const redisClient = require("../src/config/redis");
 const app = require("../src/app");
 const { authHeader } = require("./helpers");
@@ -81,6 +83,24 @@ describe("DELETE /api/links/:code", () => {
       { isActive: false },
     );
     expect(redisClient.delCache).toHaveBeenCalledWith("shortcode:aB3xY9");
+  });
+
+  it("also evicts the custom alias from the cache and decrements totalLinks", async () => {
+    Url.findOneAndUpdate.mockResolvedValue({
+      shortCode: "aB3xY9",
+      customAlias: "my-link",
+    });
+
+    await request(app)
+      .delete("/api/links/aB3xY9")
+      .set("Authorization", authHeader(USER_ID));
+
+    expect(redisClient.delCache).toHaveBeenCalledWith("shortcode:aB3xY9");
+    expect(redisClient.delCache).toHaveBeenCalledWith("shortcode:my-link");
+    expect(User.updateOne).toHaveBeenCalledWith(
+      { _id: USER_ID },
+      { $inc: { totalLinks: -1 } },
+    );
   });
 
   it("returns 404 when the link is missing or owned by someone else", async () => {

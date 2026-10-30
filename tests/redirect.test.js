@@ -52,14 +52,17 @@ describe("GET /:code", () => {
     expect(res.status).toBe(301);
     expect(res.headers.location).toBe("https://example.com/from-db");
     expect(Url.findOne).toHaveBeenCalledWith({
-      shortCode: "aB3xY9",
       isActive: true,
+      $or: [{ shortCode: "aB3xY9" }, { customAlias: "aB3xY9" }],
     });
     // clickCount is incremented by the analytics worker, not on the hot path.
     expect(Url.findOneAndUpdate).not.toHaveBeenCalled();
     expect(redisClient.setCache).toHaveBeenCalledWith(
       "shortcode:aB3xY9",
-      "https://example.com/from-db",
+      JSON.stringify({
+        shortCode: "aB3xY9",
+        longUrl: "https://example.com/from-db",
+      }),
       24 * 60 * 60,
     );
     expect(analytics.recordClick).toHaveBeenCalledWith(
@@ -89,10 +92,81 @@ describe("GET /:code", () => {
 
     expect(res.status).toBe(410);
     expect(Url.findOne).toHaveBeenLastCalledWith({
-      shortCode: "gone123",
       isActive: false,
+      $or: [{ shortCode: "gone123" }, { customAlias: "gone123" }],
     });
     expect(redisClient.setCache).not.toHaveBeenCalled();
     expect(analytics.recordClick).not.toHaveBeenCalled();
+  });
+
+  it("serves a custom alias and records the click against the canonical short code", async () => {
+    redisClient.getCache.mockResolvedValue(null);
+    Url.findOne.mockResolvedValue({
+      shortCode: "aB3xY9",
+      customAlias: "my-link",
+      longUrl: "https://example.com/aliased",
+    });
+
+    const res = await request(app).get("/my-link");
+
+    expect(res.status).toBe(301);
+    expect(res.headers.location).toBe("https://example.com/aliased");
+    expect(redisClient.setCache).toHaveBeenCalledWith(
+      "shortcode:my-link",
+      JSON.stringify({
+        shortCode: "aB3xY9",
+        longUrl: "https://example.com/aliased",
+      }),
+      24 * 60 * 60,
+    );
+    expect(analytics.recordClick).toHaveBeenCalledWith(
+      expect.anything(),
+      "aB3xY9",
+    );
+  });
+
+  it("on a cache hit with a stored short code, records the click against that code", async () => {
+    redisClient.getCache.mockResolvedValue(
+      JSON.stringify({ shortCode: "aB3xY9", longUrl: "https://example.com/a" }),
+    );
+
+    const res = await request(app).get("/my-link");
+
+    expect(res.status).toBe(301);
+    expect(res.headers.location).toBe("https://example.com/a");
+    expect(analytics.recordClick).toHaveBeenCalledWith(
+      expect.anything(),
+      "aB3xY9",
+    );
+  });
+
+  it("returns 410 for a link past its expiresAt that the TTL sweep has not removed yet", async () => {
+    redisClient.getCache.mockResolvedValue(null);
+    Url.findOne.mockResolvedValue({
+      shortCode: "old123",
+      longUrl: "https://example.com/old",
+      expiresAt: new Date(Date.now() - 1000),
+    });
+
+    const res = await request(app).get("/old123");
+
+    expect(res.status).toBe(410);
+    expect(redisClient.setCache).not.toHaveBeenCalled();
+    expect(analytics.recordClick).not.toHaveBeenCalled();
+  });
+
+  it("caps the cache TTL at the link's remaining lifetime", async () => {
+    redisClient.getCache.mockResolvedValue(null);
+    Url.findOne.mockResolvedValue({
+      shortCode: "soon12",
+      longUrl: "https://example.com/soon",
+      expiresAt: new Date(Date.now() + 3600 * 1000),
+    });
+
+    await request(app).get("/soon12");
+
+    const ttl = redisClient.setCache.mock.calls[0][2];
+    expect(ttl).toBeGreaterThan(3590);
+    expect(ttl).toBeLessThanOrEqual(3600);
   });
 });

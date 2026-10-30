@@ -1,4 +1,5 @@
 const Url = require("../models/url.model");
+const User = require("../models/user.model");
 const redisClient = require("../config/redis");
 const { cacheKey } = require("../utils/cache-key");
 
@@ -43,7 +44,15 @@ async function deleteLink(req, res) {
     return res.status(404).json({ error: "Short URL not found" });
   }
 
-  await redisClient.delCache(cacheKey(code));
+  const keys = [cacheKey(url.shortCode)];
+  if (url.customAlias) keys.push(cacheKey(url.customAlias));
+  await Promise.all(keys.map((key) => redisClient.delCache(key)));
+
+  try {
+    await User.updateOne({ _id: req.userId }, { $inc: { totalLinks: -1 } });
+  } catch (err) {
+    req.log?.warn({ err }, "Failed to decrement totalLinks");
+  }
   res.status(204).end();
 }
 

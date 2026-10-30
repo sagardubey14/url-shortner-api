@@ -1,9 +1,16 @@
+// This file sends more than the 10/min shorten limit; rate limiting has its own suite.
+jest.mock("../src/middlewares/rate-limit.middleware", () => {
+  const passThrough = (req, res, next) => next();
+  return { shortenLimiter: passThrough, apiLimiter: passThrough };
+});
 jest.mock("../src/models/url.model");
+jest.mock("../src/models/user.model");
 jest.mock("../src/services/shorten.service");
 jest.mock("../src/services/metadata.service");
 
 const request = require("supertest");
 const Url = require("../src/models/url.model");
+const User = require("../src/models/user.model");
 const shortenService = require("../src/services/shorten.service");
 const metadataService = require("../src/services/metadata.service");
 const app = require("../src/app");
@@ -112,7 +119,9 @@ describe("POST /api/shorten", () => {
       .send({ longUrl: "https://example.com", customAlias: "my-link" });
 
     expect(res.status).toBe(409);
-    expect(Url.findOne).toHaveBeenCalledWith({ customAlias: "my-link" });
+    expect(Url.findOne).toHaveBeenCalledWith({
+      $or: [{ customAlias: "my-link" }, { shortCode: "my-link" }],
+    });
     expect(shortenService.getNextShortCode).not.toHaveBeenCalled();
     expect(Url.create).not.toHaveBeenCalled();
   });
@@ -136,5 +145,62 @@ describe("POST /api/shorten", () => {
     expect(Url.create).toHaveBeenCalledWith(
       expect.objectContaining({ customAlias: "my-link" }),
     );
+  });
+
+  it.each(["health", "api", "api-docs"])(
+    "rejects the reserved alias %s with 400",
+    async (customAlias) => {
+      const res = await request(app)
+        .post("/api/shorten")
+        .set("Authorization", authHeader())
+        .send({ longUrl: "https://example.com", customAlias });
+
+      expect(res.status).toBe(400);
+      expect(Url.create).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns 409 when a concurrent request wins the alias (duplicate key)", async () => {
+    Url.findOne.mockResolvedValue(null);
+    shortenService.getNextShortCode.mockResolvedValue("aB3xY9");
+    Url.create.mockRejectedValue(
+      Object.assign(new Error("E11000 duplicate key"), { code: 11000 }),
+    );
+
+    const res = await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader())
+      .send({ longUrl: "https://example.com", customAlias: "my-link" });
+
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({ error: "Custom alias already in use" });
+  });
+
+  it("increments the owner's totalLinks", async () => {
+    shortenService.getNextShortCode.mockResolvedValue("aB3xY9");
+    Url.create.mockResolvedValue({ shortCode: "aB3xY9" });
+
+    await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader("507f1f77bcf86cd799439011"))
+      .send({ longUrl: "https://example.com" });
+
+    expect(User.updateOne).toHaveBeenCalledWith(
+      { _id: "507f1f77bcf86cd799439011" },
+      { $inc: { totalLinks: 1 } },
+    );
+  });
+
+  it("still returns 201 when the totalLinks update fails", async () => {
+    shortenService.getNextShortCode.mockResolvedValue("aB3xY9");
+    Url.create.mockResolvedValue({ shortCode: "aB3xY9" });
+    User.updateOne.mockRejectedValue(new Error("mongo blip"));
+
+    const res = await request(app)
+      .post("/api/shorten")
+      .set("Authorization", authHeader())
+      .send({ longUrl: "https://example.com" });
+
+    expect(res.status).toBe(201);
   });
 });
